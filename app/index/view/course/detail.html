@@ -257,8 +257,37 @@ function generateChapter(chapterId) {
 
 // 导出课程
 function exportCourse(format) {
-    layer.msg('导出功能开发中...', {icon: 0});
-    // TODO: 实现导出功能
+    layui.use('layer', function(){
+        var layer = layui.layer;
+        var courseId = $('#course-id').val();
+
+        layer.closeAll();
+        var loadIndex = layer.load(1, {shade: [0.3, '#000']});
+
+        $.ajax({
+            url: '/export/export',
+            type: 'POST',
+            data: {
+                course_id: courseId,
+                format: format
+            },
+            success: function(res) {
+                layer.close(loadIndex);
+                if (res.code === 1) {
+                    layer.msg('导出成功，正在下载...', {icon: 1});
+                    // 触发下载
+                    var downloadUrl = res.data.url;
+                    window.location.href = downloadUrl;
+                } else {
+                    layer.msg(res.message || '导出失败', {icon: 2});
+                }
+            },
+            error: function() {
+                layer.close(loadIndex);
+                layer.msg('导出失败，请稍后重试', {icon: 2});
+            }
+        });
+    });
 }
 </script>
 {/block}
