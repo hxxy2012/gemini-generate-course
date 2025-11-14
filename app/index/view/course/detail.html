@@ -1,0 +1,264 @@
+{extend name="layout/main" /}
+
+{block name="title"}{$course.course_title} - CourseGenius{/block}
+
+{block name="css"}
+<link rel="stylesheet" href="https://cdn.staticfile.org/zTree.v3/3.5.49/css/zTreeStyle/zTreeStyle.min.css">
+<style>
+    .course-header {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .chapter-tree-panel {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        min-height: 500px;
+    }
+    .ztree li a.curSelectedNode {
+        background-color: #009688 !important;
+        color: white !important;
+    }
+</style>
+{/block}
+
+{block name="content"}
+<div class="course-header">
+    <div class="layui-row">
+        <div class="layui-col-md8">
+            <h2 style="margin: 0 0 10px 0;">{$course.course_title}</h2>
+            <p style="color: #999; margin: 0 0 15px 0;">{$course.course_description|default='暂无描述'}</p>
+            <div>
+                <span class="layui-badge">状态: {$course.status_text}</span>
+                <span class="layui-badge layui-bg-blue" style="margin-left: 10px;">
+                    进度: {$course.generated_chapters}/{$course.total_chapters} 章节
+                </span>
+                <span class="layui-badge layui-bg-orange" style="margin-left: 10px;">
+                    字数: {$course.total_words}
+                </span>
+            </div>
+        </div>
+        <div class="layui-col-md4" style="text-align: right;">
+            <button class="layui-btn" id="generate-outline-btn">
+                <i class="fa-solid fa-magic"></i> 生成大纲
+            </button>
+            <button class="layui-btn layui-btn-normal" id="batch-generate-btn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 批量生成
+            </button>
+            <button class="layui-btn layui-btn-warm" id="export-btn">
+                <i class="fa-solid fa-download"></i> 导出
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md4">
+        <div class="chapter-tree-panel">
+            <h3 style="margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #009688;">
+                <i class="fa-solid fa-sitemap"></i> 章节目录
+            </h3>
+            <ul id="chapter-tree" class="ztree"></ul>
+        </div>
+    </div>
+
+    <div class="layui-col-md8">
+        <div class="stats-card" id="chapter-detail-panel" style="min-height: 500px; display: none;">
+            <h3 style="margin: 0 0 15px 0;" id="chapter-title">章节标题</h3>
+            <div id="chapter-content">
+                <p style="color: #999; text-align: center; padding: 50px 0;">
+                    请从左侧选择章节
+                </p>
+            </div>
+        </div>
+
+        <div class="stats-card" id="empty-panel" style="text-align: center; padding: 80px 0;">
+            <i class="fa-solid fa-folder-open" style="font-size: 64px; color: #ddd;"></i>
+            <p style="margin-top: 20px; color: #999;">
+                {if $course.outline_generated == 0}
+                暂无章节，点击上方"生成大纲"按钮开始
+                {else}
+                请从左侧选择章节查看详情
+                {/if}
+            </p>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="course-id" value="{$course.id}">
+
+{/block}
+
+{block name="script"}
+<script src="https://cdn.staticfile.org/zTree.v3/3.5.49/js/jquery.ztree.all.min.js"></script>
+<script>
+layui.use(['layer', 'element'], function(){
+    var layer = layui.layer;
+    var element = layui.element;
+    var courseId = $('#course-id').val();
+    var zTreeObj;
+
+    var setting = {
+        data: {
+            simpleData: {
+                enable: true,
+                idKey: "id",
+                pIdKey: "parent_id",
+                rootPId: 0
+            }
+        },
+        callback: {
+            onClick: onTreeNodeClick
+        },
+        view: {
+            addDiyDom: addDiyDom,
+            fontCss: getFontCss
+        }
+    };
+
+    // 加载章节树
+    function loadChapterTree() {
+        $.get('/course/getChapterTree', {course_id: courseId}, function(res) {
+            if (res.code === 1 && res.data.length > 0) {
+                zTreeObj = $.fn.zTree.init($("#chapter-tree"), setting, res.data);
+                zTreeObj.expandAll(true);
+                $('#empty-panel').hide();
+            } else {
+                $('#chapter-tree').html('<p style="color: #999; text-align: center;">暂无章节</p>');
+            }
+        });
+    }
+
+    // 节点点击
+    function onTreeNodeClick(event, treeId, treeNode) {
+        loadChapterDetail(treeNode.id);
+    }
+
+    // 自定义图标
+    function addDiyDom(treeId, treeNode) {
+        var aObj = $("#" + treeNode.tId + "_a");
+        var statusHtml = '';
+        if (treeNode.status == 2) {
+            statusHtml = '<i class="fa-solid fa-check-circle" style="color: #5FB878; margin-left: 5px;"></i>';
+        } else if (treeNode.status == 1) {
+            statusHtml = '<i class="fa-solid fa-spinner fa-spin" style="color: #FFB800; margin-left: 5px;"></i>';
+        } else {
+            statusHtml = '<button class="layui-btn layui-btn-xs layui-btn-normal" style="margin-left: 10px;" onclick="generateChapter(' + treeNode.id + ')">生成</button>';
+        }
+        aObj.append(statusHtml);
+    }
+
+    function getFontCss(treeId, treeNode) {
+        return treeNode.status == 2 ? {} : {color:"#999"};
+    }
+
+    // 加载章节详情
+    function loadChapterDetail(chapterId) {
+        $.get('/chapter/detail/' + chapterId, function(res) {
+            if (res.code === 1) {
+                var chapter = res.data;
+                $('#chapter-title').html(chapter.chapter_number + ' ' + chapter.chapter_title);
+                $('#chapter-detail-panel').show();
+                $('#empty-panel').hide();
+
+                if (chapter.content) {
+                    $('#chapter-content').html(chapter.content_html || chapter.content);
+                } else {
+                    $('#chapter-content').html(
+                        '<div style="text-align: center; padding: 40px; background: #f8f8f8; border-radius: 4px;">' +
+                        '<p style="color: #999;">该章节尚未生成内容</p>' +
+                        '<button class="layui-btn layui-btn-normal" onclick="generateChapter(' + chapterId + ')">' +
+                        '<i class="fa-solid fa-magic"></i> 立即生成</button></div>'
+                    );
+                }
+            }
+        });
+    }
+
+    // 生成大纲
+    $('#generate-outline-btn').click(function() {
+        layer.confirm('确定要生成课程大纲吗？', function(index) {
+            var loadIndex = layer.load(1);
+            $.post('/generate/generateOutline', {course_id: courseId}, function(res) {
+                layer.close(loadIndex);
+                if (res.code === 1) {
+                    layer.msg('大纲生成任务已创建，请稍后刷新页面', {icon: 1});
+                    setTimeout(function() { location.reload(); }, 3000);
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            });
+            layer.close(index);
+        });
+    });
+
+    // 批量生成
+    $('#batch-generate-btn').click(function() {
+        layer.confirm('确定要批量生成所有未生成的章节吗？', function(index) {
+            var loadIndex = layer.load(1);
+            $.post('/generate/batchGenerate', {course_id: courseId}, function(res) {
+                layer.close(loadIndex);
+                if (res.code === 1) {
+                    layer.msg('已创建 ' + res.data.count + ' 个生成任务', {icon: 1});
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            });
+            layer.close(index);
+        });
+    });
+
+    // 导出
+    $('#export-btn').click(function() {
+        layer.open({
+            type: 1,
+            title: '导出课程',
+            area: ['400px', '300px'],
+            content: '<div style="padding: 20px;">' +
+                '<p>请选择导出格式：</p>' +
+                '<div style="margin-top: 20px;">' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 10px;" onclick="exportCourse(\'docx\')">Word文档 (.docx)</button>' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 10px;" onclick="exportCourse(\'pdf\')">PDF文档 (.pdf)</button>' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 10px;" onclick="exportCourse(\'md\')">Markdown (.md)</button>' +
+                '<button class="layui-btn layui-btn-fluid" onclick="exportCourse(\'html\')">HTML网页 (.html)</button>' +
+                '</div></div>'
+        });
+    });
+
+    loadChapterTree();
+
+    // 每10秒刷新一次（如果有生成中的任务）
+    setInterval(function() {
+        loadChapterTree();
+    }, 10000);
+});
+
+// 生成单个章节
+function generateChapter(chapterId) {
+    layui.use('layer', function(){
+        var layer = layui.layer;
+        layer.confirm('确定要生成该章节内容吗？', function(index) {
+            var loadIndex = layer.load(1);
+            $.post('/generate/generateChapter', {chapter_id: chapterId}, function(res) {
+                layer.close(loadIndex);
+                if (res.code === 1) {
+                    layer.msg('生成任务已创建', {icon: 1});
+                    setTimeout(function() { location.reload(); }, 2000);
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            });
+            layer.close(index);
+        });
+    });
+}
+
+// 导出课程
+function exportCourse(format) {
+    layer.msg('导出功能开发中...', {icon: 0});
+    // TODO: 实现导出功能
+}
+</script>
+{/block}

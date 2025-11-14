@@ -58,6 +58,20 @@ Route::group('/generate', function () {
     Route::get('/testApi', 'index/Generate/testApi');
 })->allowCrossDomain();
 
+// 导出功能
+Route::group('/export', function () {
+    Route::post('/export', 'index/Export/export');
+    Route::get('/download/:filename', 'index/Export/download');
+})->allowCrossDomain();
+
+// 用户中心
+Route::group('/user', function () {
+    Route::get('/index', 'index/User/index');
+    Route::rule('/profile', 'index/User/profile', 'GET|POST');
+    Route::get('/settings', 'index/User/settings');
+    Route::get('/stats', 'index/User/stats');
+})->allowCrossDomain();
+
 // 错误页面
 Route::miss(function() {
     return json([

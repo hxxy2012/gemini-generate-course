@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{block name="title"}CourseGenius - AI课程生成系统{/block}</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.8.18/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css">
+    {block name="css"}{/block}
+    <style>
+        body {
+            background-color: #f2f2f2;
+        }
+        .layui-header {
+            background-color: #009688;
+        }
+        .layui-header .layui-logo {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .layui-side {
+            background-color: #393D49;
+        }
+        .layui-body {
+            background-color: #f2f2f2;
+        }
+        .content-wrapper {
+            padding: 15px;
+        }
+        .stats-card {
+            background: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
+        }
+        .welcome-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    {block name="content"}{/block}
+
+    <script src="https://cdn.staticfile.org/layui/2.8.18/layui.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+    {block name="script"}{/block}
+</body>
+</html>

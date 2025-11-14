@@ -1,0 +1,223 @@
+{extend name="layout/main" /}
+
+{block name="title"}创建课程 - CourseGenius{/block}
+
+{block name="content"}
+<div class="stats-card">
+    <h2 style="margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+        <i class="fa-solid fa-plus-circle"></i> 创建新课程
+    </h2>
+
+    <form class="layui-form" lay-filter="course-form">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md8">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程标题 *</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="course_title" lay-verify="required" placeholder="例如：Python全栈开发从入门到实战" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程主题 *</label>
+                    <div class="layui-input-block">
+                        <textarea name="course_topic" lay-verify="required" placeholder="请详细描述课程主题和内容方向，这将影响AI生成的大纲质量&#10;例如：这是一门面向零基础学员的Python编程课程，涵盖Python基础语法、Web开发、数据库操作、前端技术等内容。课程注重实战，每章包含代码示例和练习。" class="layui-textarea" style="height: 120px;"></textarea>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程描述</label>
+                    <div class="layui-input-block">
+                        <textarea name="course_description" placeholder="简短描述课程（可选）" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">目标受众</label>
+                    <div class="layui-input-block">
+                        <select name="target_audience">
+                            <option value="beginner" selected>初学者</option>
+                            <option value="intermediate">中级学员</option>
+                            <option value="advanced">高级学员</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">内容风格</label>
+                    <div class="layui-input-block">
+                        <select name="content_style">
+                            <option value="practical" selected>实战导向</option>
+                            <option value="formal">正式学术</option>
+                            <option value="casual">通俗易懂</option>
+                            <option value="humorous">幽默风趣</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">语言</label>
+                    <div class="layui-input-block">
+                        <select name="language">
+                            <option value="zh-CN" selected>中文</option>
+                            <option value="en-US">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-col-md4">
+                <div style="background: #f8f8f8; padding: 20px; border-radius: 4px;">
+                    <h3 style="margin: 0 0 15px 0;">
+                        <i class="fa-solid fa-cog"></i> 生成设置
+                    </h3>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">章节数量</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="chapter_count_suggest" value="10" min="3" max="50" class="layui-input">
+                            <div class="layui-form-mid layui-word-aux">建议3-30章</div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">目录级数</label>
+                        <div class="layui-input-block">
+                            <select name="depth_level">
+                                <option value="2">2级（章-节）</option>
+                                <option value="3" selected>3级（章-节-小节）</option>
+                                <option value="4">4级（更细）</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">每章字数</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="word_count_per_chapter" value="1500" min="500" max="5000" class="layui-input">
+                            <div class="layui-form-mid layui-word-aux">建议500-3000字</div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">包含内容</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="include_code" lay-skin="primary" title="代码示例" value="1">
+                            <input type="checkbox" name="include_exercises" lay-skin="primary" title="练习题" value="1">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">特殊要求</label>
+                        <div class="layui-input-block">
+                            <textarea name="special_requirements" placeholder="其他要求（可选）" class="layui-textarea" style="height: 80px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item" style="margin-top: 30px;">
+            <div class="layui-input-block">
+                <button class="layui-btn layui-btn-lg" lay-submit lay-filter="submit-create">
+                    <i class="fa-solid fa-save"></i> 创建课程
+                </button>
+                <button class="layui-btn layui-btn-lg layui-btn-normal" lay-submit lay-filter="submit-create-and-generate">
+                    <i class="fa-solid fa-magic"></i> 创建并生成大纲
+                </button>
+                <a href="/course/index" class="layui-btn layui-btn-lg layui-btn-primary">
+                    <i class="fa-solid fa-times"></i> 取消
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="stats-card" style="background: #fffbe6; border-left: 4px solid #ffb800;">
+    <h4 style="margin: 0 0 10px 0;">
+        <i class="fa-solid fa-lightbulb"></i> 提示
+    </h4>
+    <ul style="margin: 0; padding-left: 20px; line-height: 2;">
+        <li>课程主题描述越详细，AI生成的大纲质量越高</li>
+        <li>建议先创建课程，审核大纲后再批量生成内容</li>
+        <li>免费版用户每日API配额有限，建议合理使用</li>
+        <li>生成过程在后台队列中进行，请耐心等待</li>
+    </ul>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+layui.use(['form', 'layer'], function(){
+    var form = layui.form;
+    var layer = layui.layer;
+
+    // 监听提交 - 仅创建
+    form.on('submit(submit-create)', function(data){
+        submitForm(data.field, false);
+        return false;
+    });
+
+    // 监听提交 - 创建并生成大纲
+    form.on('submit(submit-create-and-generate)', function(data){
+        submitForm(data.field, true);
+        return false;
+    });
+
+    function submitForm(formData, generateOutline) {
+        var loadIndex = layer.load(1, {shade: 0.3});
+
+        $.ajax({
+            url: '/course/create',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(res) {
+                layer.close(loadIndex);
+                if (res.code === 1) {
+                    var courseId = res.data.course_id;
+
+                    if (generateOutline) {
+                        // 创建成功后生成大纲
+                        layer.msg('课程创建成功，正在生成大纲...', {icon: 1, time: 2000}, function() {
+                            generateCourseOutline(courseId);
+                        });
+                    } else {
+                        layer.msg('课程创建成功', {icon: 1}, function() {
+                            location.href = '/course/detail/' + courseId;
+                        });
+                    }
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            },
+            error: function() {
+                layer.close(loadIndex);
+                layer.msg('创建失败，请稍后重试', {icon: 2});
+            }
+        });
+    }
+
+    function generateCourseOutline(courseId) {
+        $.ajax({
+            url: '/generate/generateOutline',
+            type: 'POST',
+            data: {course_id: courseId},
+            dataType: 'json',
+            success: function(res) {
+                if (res.code === 1) {
+                    layer.msg('大纲生成任务已创建', {icon: 1}, function() {
+                        location.href = '/course/detail/' + courseId;
+                    });
+                } else {
+                    layer.msg(res.message, {icon: 2}, function() {
+                        location.href = '/course/detail/' + courseId;
+                    });
+                }
+            }
+        });
+    }
+});
+</script>
+{/block}

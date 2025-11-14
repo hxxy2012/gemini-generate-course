@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - CourseGenius</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.8.18/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            width: 400px;
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.2);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .login-header p {
+            color: #999;
+            font-size: 14px;
+        }
+        .login-logo {
+            font-size: 48px;
+            color: #009688;
+            margin-bottom: 15px;
+        }
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+        .layui-input {
+            height: 45px;
+            line-height: 45px;
+            padding-left: 15px;
+        }
+        .login-btn {
+            width: 100%;
+            height: 45px;
+            line-height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-size: 16px;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .login-footer a {
+            color: #009688;
+            text-decoration: none;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h1>CourseGenius</h1>
+            <p>AI驱动的课程生成系统</p>
+        </div>
+
+        <form class="layui-form" lay-filter="login-form">
+            <div class="layui-form-item">
+                <input type="text" name="username" lay-verify="required" placeholder="用户名或邮箱" autocomplete="off" class="layui-input">
+            </div>
+            <div class="layui-form-item">
+                <input type="password" name="password" lay-verify="required" placeholder="密码" autocomplete="off" class="layui-input">
+            </div>
+            <div class="layui-form-item">
+                <input type="checkbox" name="remember" lay-skin="primary" title="记住登录" checked>
+            </div>
+            <div class="layui-form-item">
+                <button class="layui-btn login-btn" lay-submit lay-filter="login-submit">
+                    <i class="fa-solid fa-right-to-bracket"></i> 登录
+                </button>
+            </div>
+        </form>
+
+        <div class="login-footer">
+            <p>还没有账号？ <a href="/register">立即注册</a></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.staticfile.org/layui/2.8.18/layui.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        layui.use(['form', 'layer'], function(){
+            var form = layui.form;
+            var layer = layui.layer;
+
+            // 监听提交
+            form.on('submit(login-submit)', function(data){
+                var loadIndex = layer.load(1, {shade: 0.3});
+
+                $.ajax({
+                    url: '/login',
+                    type: 'POST',
+                    data: data.field,
+                    dataType: 'json',
+                    success: function(res) {
+                        layer.close(loadIndex);
+                        if (res.code === 1) {
+                            layer.msg('登录成功', {icon: 1}, function() {
+                                location.href = '/course/index';
+                            });
+                        } else {
+                            layer.msg(res.message, {icon: 2});
+                        }
+                    },
+                    error: function() {
+                        layer.close(loadIndex);
+                        layer.msg('登录失败，请稍后重试', {icon: 2});
+                    }
+                });
+
+                return false;
+            });
+        });
+    </script>
+</body>
+</html>

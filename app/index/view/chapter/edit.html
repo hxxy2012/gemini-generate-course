@@ -1,0 +1,234 @@
+{extend name="layout/main" /}
+
+{block name="title"}编辑章节 - {$chapter.chapter_title}{/block}
+
+{block name="css"}
+<link rel="stylesheet" href="https://cdn.staticfile.org/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/codemirror/5.65.2/theme/monokai.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/5.1.0/github-markdown.min.css">
+<style>
+    .editor-container {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .editor-toolbar {
+        background: #f8f8f8;
+        padding: 10px 15px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    .editor-toolbar button {
+        margin-right: 5px;
+    }
+    .editor-split {
+        display: flex;
+        height: calc(100vh - 250px);
+    }
+    .editor-left, .editor-right {
+        flex: 1;
+        overflow: auto;
+    }
+    .editor-left {
+        border-right: 1px solid #e5e5e5;
+    }
+    .CodeMirror {
+        height: 100%;
+        font-size: 14px;
+    }
+    .markdown-body {
+        padding: 20px;
+        box-sizing: border-box;
+        min-height: 100%;
+    }
+</style>
+{/block}
+
+{block name="content"}
+<div class="stats-card" style="padding: 15px; margin-bottom: 15px;">
+    <div class="layui-row">
+        <div class="layui-col-md6">
+            <h3 style="margin: 0;">
+                <i class="fa-solid fa-edit"></i> {$chapter.chapter_number} {$chapter.chapter_title}
+            </h3>
+        </div>
+        <div class="layui-col-md6" style="text-align: right;">
+            <button class="layui-btn layui-btn-sm" id="save-btn">
+                <i class="fa-solid fa-save"></i> 保存
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="ai-optimize-btn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI优化
+            </button>
+            <a href="/course/detail/{$chapter.course_id}" class="layui-btn layui-btn-sm layui-btn-primary">
+                <i class="fa-solid fa-arrow-left"></i> 返回
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="editor-container">
+    <div class="editor-toolbar">
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('# ')">
+            <i class="fa-solid fa-heading"></i> 标题
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('**', '**')">
+            <i class="fa-solid fa-bold"></i> 粗体
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('*', '*')">
+            <i class="fa-solid fa-italic"></i> 斜体
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('\n- ')">
+            <i class="fa-solid fa-list"></i> 列表
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('[链接文字](http://)')">
+            <i class="fa-solid fa-link"></i> 链接
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('\n```\n', '\n```\n')">
+            <i class="fa-solid fa-code"></i> 代码块
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('`', '`')">
+            <i class="fa-solid fa-terminal"></i> 行内代码
+        </button>
+        <button class="layui-btn layui-btn-xs" onclick="insertMarkdown('\n> ')">
+            <i class="fa-solid fa-quote-left"></i> 引用
+        </button>
+    </div>
+
+    <div class="editor-split">
+        <div class="editor-left">
+            <textarea id="markdown-editor">{$chapter.content|default=''|raw}</textarea>
+        </div>
+        <div class="editor-right">
+            <div class="markdown-body" id="preview"></div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="chapter-id" value="{$chapter.id}">
+
+{/block}
+
+{block name="script"}
+<script src="https://cdn.staticfile.org/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdn.staticfile.org/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+<script src="https://cdn.staticfile.org/marked/4.2.12/marked.min.js"></script>
+<script>
+layui.use(['layer'], function(){
+    var layer = layui.layer;
+    var chapterId = $('#chapter-id').val();
+
+    // 初始化CodeMirror
+    var editor = CodeMirror.fromTextArea(document.getElementById('markdown-editor'), {
+        mode: 'markdown',
+        theme: 'monokai',
+        lineNumbers: true,
+        lineWrapping: true,
+        autofocus: true
+    });
+
+    // 实时预览
+    function updatePreview() {
+        var markdown = editor.getValue();
+        var html = marked.parse(markdown);
+        $('#preview').html(html);
+    }
+
+    editor.on('change', function() {
+        updatePreview();
+    });
+
+    // 初始预览
+    updatePreview();
+
+    // 插入Markdown语法
+    window.insertMarkdown = function(before, after) {
+        after = after || '';
+        var selection = editor.getSelection();
+        editor.replaceSelection(before + selection + after);
+        editor.focus();
+    };
+
+    // 保存
+    $('#save-btn').click(function() {
+        var content = editor.getValue();
+        if (!content.trim()) {
+            layer.msg('内容不能为空', {icon: 2});
+            return;
+        }
+
+        var loadIndex = layer.load(1);
+        $.post('/chapter/save', {
+            chapter_id: chapterId,
+            content: content
+        }, function(res) {
+            layer.close(loadIndex);
+            if (res.code === 1) {
+                layer.msg('保存成功', {icon: 1});
+            } else {
+                layer.msg(res.message, {icon: 2});
+            }
+        });
+    });
+
+    // AI优化
+    $('#ai-optimize-btn').click(function() {
+        var selection = editor.getSelection();
+        if (!selection) {
+            layer.msg('请先选中要优化的文本', {icon: 0});
+            return;
+        }
+
+        layer.open({
+            type: 1,
+            title: 'AI文本优化',
+            area: ['350px', '250px'],
+            content: '<div style="padding: 20px;">' +
+                '<p>请选择优化方式：</p>' +
+                '<div style="margin-top: 15px;">' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 8px;" onclick="aiOptimize(\'rewrite\')">改写</button>' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 8px;" onclick="aiOptimize(\'expand\')">扩写</button>' +
+                '<button class="layui-btn layui-btn-fluid" style="margin-bottom: 8px;" onclick="aiOptimize(\'shorten\')">缩写</button>' +
+                '<button class="layui-btn layui-btn-fluid" onclick="aiOptimize(\'translate\')">翻译</button>' +
+                '</div></div>'
+        });
+    });
+
+    window.aiOptimize = function(action) {
+        layer.closeAll();
+        var selection = editor.getSelection();
+        var loadIndex = layer.load(1, {shade: 0.3});
+
+        $.post('/generate/optimizeText', {
+            text: selection,
+            action: action
+        }, function(res) {
+            layer.close(loadIndex);
+            if (res.code === 1) {
+                editor.replaceSelection(res.data.result);
+                layer.msg('优化成功', {icon: 1});
+            } else {
+                layer.msg(res.message, {icon: 2});
+            }
+        });
+    };
+
+    // 自动保存（每30秒）
+    setInterval(function() {
+        var content = editor.getValue();
+        if (content.trim()) {
+            $.post('/chapter/save', {
+                chapter_id: chapterId,
+                content: content
+            });
+        }
+    }, 30000);
+
+    // 快捷键保存
+    editor.setOption('extraKeys', {
+        'Ctrl-S': function() {
+            $('#save-btn').click();
+            return false;
+        }
+    });
+});
+</script>
+{/block}

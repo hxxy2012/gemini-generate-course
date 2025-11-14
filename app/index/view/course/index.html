@@ -1,0 +1,228 @@
+{extend name="layout/main" /}
+
+{block name="title"}我的课程 - CourseGenius{/block}
+
+{block name="content"}
+<div class="welcome-banner">
+    <h2 style="margin: 0 0 10px 0;">
+        <i class="fa-solid fa-hand-sparkles"></i> 欢迎回来！
+    </h2>
+    <p style="margin: 0; opacity: 0.9;">开始创建您的AI课程，让知识传播更简单</p>
+</div>
+
+<!-- 统计卡片 -->
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md3">
+        <div class="stats-card">
+            <h3 style="margin: 0 0 10px 0; color: #009688;">
+                <i class="fa-solid fa-book"></i> 总课程数
+            </h3>
+            <p style="font-size: 32px; font-weight: bold; margin: 0;" id="total-courses">0</p>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stats-card">
+            <h3 style="margin: 0 0 10px 0; color: #5FB878;">
+                <i class="fa-solid fa-check-circle"></i> 已完成
+            </h3>
+            <p style="font-size: 32px; font-weight: bold; margin: 0;" id="completed-courses">0</p>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stats-card">
+            <h3 style="margin: 0 0 10px 0; color: #FFB800;">
+                <i class="fa-solid fa-file-lines"></i> 总章节数
+            </h3>
+            <p style="font-size: 32px; font-weight: bold; margin: 0;" id="total-chapters">0</p>
+        </div>
+    </div>
+    <div class="layui-col-md3">
+        <div class="stats-card">
+            <h3 style="margin: 0 0 10px 0; color: #FF5722;">
+                <i class="fa-solid fa-spell-check"></i> 总字数
+            </h3>
+            <p style="font-size: 32px; font-weight: bold; margin: 0;" id="total-words">0</p>
+        </div>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="stats-card" style="margin-top: 20px;">
+    <div class="layui-row">
+        <div class="layui-col-md8">
+            <div class="layui-inline">
+                <input type="text" id="search-keyword" placeholder="搜索课程标题" autocomplete="off" class="layui-input" style="width: 250px;">
+            </div>
+            <div class="layui-inline">
+                <select id="status-filter" lay-filter="status-filter">
+                    <option value="">全部状态</option>
+                    <option value="0">草稿</option>
+                    <option value="2">大纲完成</option>
+                    <option value="3">内容生成中</option>
+                    <option value="4">已完成</option>
+                </select>
+            </div>
+            <button class="layui-btn" id="search-btn">
+                <i class="fa-solid fa-search"></i> 搜索
+            </button>
+        </div>
+        <div class="layui-col-md4" style="text-align: right;">
+            <a href="/course/create" class="layui-btn layui-btn-normal">
+                <i class="fa-solid fa-plus"></i> 创建课程
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 课程列表 -->
+<div class="stats-card">
+    <table class="layui-hide" id="course-table" lay-filter="course-table"></table>
+</div>
+
+<!-- 表格工具栏 -->
+<script type="text/html" id="toolbar">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="refresh">
+            <i class="fa-solid fa-refresh"></i> 刷新
+        </button>
+    </div>
+</script>
+
+<!-- 操作列 -->
+<script type="text/html" id="operation-bar">
+    <a class="layui-btn layui-btn-xs" lay-event="detail">
+        <i class="fa-solid fa-eye"></i> 查看
+    </a>
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">
+        <i class="fa-solid fa-edit"></i> 编辑
+    </a>
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete">
+        <i class="fa-solid fa-trash"></i> 删除
+    </a>
+</script>
+
+<!-- 状态列 -->
+<script type="text/html" id="status-tpl">
+    {{# if (d.status == 0) { }}
+        <span class="status-badge status-draft">草稿</span>
+    {{# } else if (d.status == 1) { }}
+        <span class="status-badge status-generating">大纲生成中</span>
+    {{# } else if (d.status == 2) { }}
+        <span class="status-badge" style="background:#d4edda;color:#28a745;">大纲完成</span>
+    {{# } else if (d.status == 3) { }}
+        <span class="status-badge status-generating">内容生成中</span>
+    {{# } else if (d.status == 4) { }}
+        <span class="status-badge status-complete">已完成</span>
+    {{# } }}
+</script>
+
+<!-- 进度列 -->
+<script type="text/html" id="progress-tpl">
+    <div>
+        <div class="layui-progress" lay-filter="progress-{{d.id}}">
+            <div class="layui-progress-bar" lay-percent="{{d.progress}}%"></div>
+        </div>
+        <small>{{d.generated_chapters}}/{{d.total_chapters}} 章节</small>
+    </div>
+</script>
+
+{/block}
+
+{block name="script"}
+<script>
+layui.use(['table', 'layer', 'element', 'form'], function(){
+    var table = layui.table;
+    var layer = layui.layer;
+    var element = layui.element;
+    var form = layui.form;
+
+    // 加载统计数据
+    function loadStats() {
+        $.get('/course/stats', function(res) {
+            if (res.code === 1) {
+                $('#total-courses').text(res.data.total_courses);
+                $('#completed-courses').text(res.data.completed_courses);
+                $('#total-chapters').text(res.data.total_chapters);
+                $('#total-words').text(res.data.total_words.toLocaleString());
+            }
+        });
+    }
+
+    // 渲染表格
+    var tableIns = table.render({
+        elem: '#course-table',
+        url: '/course/index',
+        toolbar: '#toolbar',
+        defaultToolbar: ['filter', 'exports'],
+        cols: [[
+            {field: 'id', title: 'ID', width: 80, sort: true},
+            {field: 'course_title', title: '课程标题', minWidth: 200},
+            {field: 'status', title: '状态', width: 120, templet: '#status-tpl'},
+            {field: 'progress', title: '进度', width: 150, templet: '#progress-tpl'},
+            {field: 'total_words', title: '总字数', width: 100, sort: true},
+            {field: 'create_time', title: '创建时间', width: 180, sort: true},
+            {title: '操作', width: 220, toolbar: '#operation-bar', fixed: 'right'}
+        ]],
+        page: true,
+        limits: [10, 20, 30, 50],
+        limit: 10,
+        done: function(res, curr, count) {
+            // 渲染进度条
+            res.data.forEach(function(item) {
+                element.render('progress', 'progress-' + item.id);
+            });
+        }
+    });
+
+    // 头工具栏事件
+    table.on('toolbar(course-table)', function(obj){
+        if(obj.event === 'refresh'){
+            tableIns.reload();
+            loadStats();
+        }
+    });
+
+    // 监听行工具事件
+    table.on('tool(course-table)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'detail'){
+            location.href = '/course/detail/' + data.id;
+        } else if(obj.event === 'edit'){
+            location.href = '/course/edit/' + data.id;
+        } else if(obj.event === 'delete'){
+            layer.confirm('确定要删除此课程吗？', function(index){
+                $.post('/course/delete/' + data.id, function(res){
+                    if(res.code === 1){
+                        layer.msg('删除成功', {icon: 1});
+                        obj.del();
+                        loadStats();
+                    } else {
+                        layer.msg(res.message, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        }
+    });
+
+    // 搜索
+    $('#search-btn').click(function(){
+        tableIns.reload({
+            where: {
+                keyword: $('#search-keyword').val(),
+                status: $('#status-filter').val()
+            },
+            page: {curr: 1}
+        });
+    });
+
+    // 状态筛选
+    form.on('select(status-filter)', function(data){
+        $('#search-btn').click();
+    });
+
+    // 加载统计
+    loadStats();
+});
+</script>
+{/block}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{block name="title"}CourseGenius - AI课程生成系统{/block}</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.8.18/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css">
+    {block name="css"}{/block}
+    <style>
+        .layui-layout-admin .layui-header {
+            background-color: #009688;
+        }
+        .layui-header .layui-logo {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .layui-side {
+            background-color: #393D49;
+        }
+        .layui-body {
+            background-color: #f2f2f2;
+        }
+        .content-wrapper {
+            padding: 15px;
+        }
+        .stats-card {
+            background: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
+        }
+        .welcome-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .course-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .course-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            transform: translateY(-2px);
+        }
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .status-draft { background-color: #f0f0f0; color: #666; }
+        .status-generating { background-color: #ffe7ba; color: #ff9800; }
+        .status-complete { background-color: #d4edda; color: #28a745; }
+    </style>
+</head>
+<body class="layui-layout-body">
+    <div class="layui-layout layui-layout-admin">
+        <!-- 头部 -->
+        <div class="layui-header">
+            <div class="layui-logo layui-hide-xs">
+                <i class="fa-solid fa-graduation-cap"></i> CourseGenius
+            </div>
+            <ul class="layui-nav layui-layout-left">
+                <li class="layui-nav-item layui-hide-xs"><a href="/course/index">我的课程</a></li>
+                <li class="layui-nav-item layui-hide-xs"><a href="/course/create">创建课程</a></li>
+            </ul>
+            <ul class="layui-nav layui-layout-right">
+                <li class="layui-nav-item layui-hide-xs">
+                    <a href="javascript:;">
+                        <i class="fa-solid fa-coins"></i> 配额: <span id="quota-info">--/--</span>
+                    </a>
+                </li>
+                <li class="layui-nav-item layui-hide-xs">
+                    <a href="javascript:;">
+                        <i class="fa-solid fa-user"></i> <span id="username">--</span>
+                    </a>
+                    <dl class="layui-nav-child">
+                        <dd><a href="/user/profile">个人信息</a></dd>
+                        <dd><a href="/user/settings">账户设置</a></dd>
+                        <dd><a href="/auth/changePassword">修改密码</a></dd>
+                        <hr>
+                        <dd><a href="/logout">退出登录</a></dd>
+                    </dl>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="layui-side layui-bg-black">
+            <div class="layui-side-scroll">
+                <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                    <li class="layui-nav-item layui-this">
+                        <a href="/course/index">
+                            <i class="fa-solid fa-book"></i> 我的课程
+                        </a>
+                    </li>
+                    <li class="layui-nav-item">
+                        <a href="/course/create">
+                            <i class="fa-solid fa-plus"></i> 创建课程
+                        </a>
+                    </li>
+                    <li class="layui-nav-item">
+                        <a href="/user/stats">
+                            <i class="fa-solid fa-chart-line"></i> 数据统计
+                        </a>
+                    </li>
+                    <li class="layui-nav-item">
+                        <a href="javascript:;">
+                            <i class="fa-solid fa-cog"></i> 设置
+                        </a>
+                        <dl class="layui-nav-child">
+                            <dd><a href="/user/profile">个人资料</a></dd>
+                            <dd><a href="/user/settings">账户设置</a></dd>
+                            <dd><a href="/auth/changePassword">修改密码</a></dd>
+                        </dl>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主体内容 -->
+        <div class="layui-body">
+            <div class="content-wrapper">
+                {block name="content"}{/block}
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="layui-footer">
+            <p style="text-align: center; padding: 20px 0; color: #999;">
+                © 2024 CourseGenius - AI驱动的课程生成系统
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.staticfile.org/layui/2.8.18/layui.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        layui.use(['element', 'layer'], function(){
+            var element = layui.element;
+            var layer = layui.layer;
+
+            // 加载用户信息
+            $.get('/auth/userInfo', function(res) {
+                if (res.code === 1) {
+                    $('#username').text(res.data.nickname || res.data.username);
+                    $('#quota-info').text(res.data.api_used_today + '/' + res.data.api_quota_daily);
+                }
+            });
+        });
+    </script>
+    {block name="script"}{/block}
+</body>
+</html>
